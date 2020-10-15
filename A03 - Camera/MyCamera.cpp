@@ -152,11 +152,24 @@ void Simplex::MyCamera::CalculateProjectionMatrix(void)
 
 void MyCamera::MoveForward(float a_fDistance)
 {
-	//The following is just an example and does not take in account the forward vector (AKA view vector)
-	m_v3Position += vector3(0.0f, 0.0f,-a_fDistance);
-	m_v3Target += vector3(0.0f, 0.0f, -a_fDistance);
-	m_v3Above += vector3(0.0f, 0.0f, -a_fDistance);
+	// Create local forward vector
+	vector3 forward = a_fDistance * glm::normalize(m_v3Target - m_v3Position);
+	// Change all v3s to translate locally
+	SetPositionTargetAndUpward(m_v3Position + forward, m_v3Target + forward, m_v3Above - m_v3Position);
 }
 
-void MyCamera::MoveVertical(float a_fDistance){}//Needs to be defined
-void MyCamera::MoveSideways(float a_fDistance){}//Needs to be defined
+void MyCamera::MoveVertical(float a_fDistance)
+{
+	// Create local upward vector
+	vector3 up = vector3(0.0f, a_fDistance, 0.0f);
+	// Change all v3s to translate locally
+	SetPositionTargetAndUpward(m_v3Position + up, m_v3Target + up, m_v3Above - m_v3Position);
+}
+
+void MyCamera::MoveSideways(float a_fDistance)
+{
+	// Create local right vector
+	vector3 right = a_fDistance * glm::cross(glm::normalize(m_v3Above - m_v3Position), glm::normalize(m_v3Target - m_v3Position));
+	// Change all v3s to translate locally
+	SetPositionTargetAndUpward(m_v3Position + right, m_v3Target + right, m_v3Above - m_v3Position);
+}

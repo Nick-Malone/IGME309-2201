@@ -49,26 +49,35 @@ void Application::Display(void)
 	switch (m_uProjection)
 	{
 	default:
-	case 1:
+	case 1: // Close to red, see through hole
 		m_pCamera->ResetCamera();
 		break;
-	case 2:
+	case 2: // Normal distance from red, see green around red
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
 		break;
-	case 3:
+	case 3: // See shapes from side
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(AXIS_X * 30.0f);
+		m_pCamera->SetUp(AXIS_Z * -1.0f);
 		break;
-	case 4:
+	case 4: // Close to blue
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(AXIS_Z * -15.0f);
 		break;
-	case 5:
+	case 5: // Between green and blue, only see green and red
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(AXIS_Z * -13.0f);
+		m_pCamera->SetNearFar(vector2(5.0f, 1000.0f));
 		break;
-	case 6:
+	case 6: // Between red and green, only see green and blue
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(AXIS_Z * -15.0f);
+		m_pCamera->SetNearFar(vector2(0.001f, 10.0f));
 		break;
-	case 7:
+	case 7: // Camera 1 but U P S I D E D O W N
 		m_pCamera->ResetCamera();
+		m_pCamera->SetUp(AXIS_Y * -1.0f);
 		break;
 	}
 

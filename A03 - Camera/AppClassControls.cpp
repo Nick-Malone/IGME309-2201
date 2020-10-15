@@ -368,8 +368,22 @@ void Application::CameraRotation(float a_fSpeed)
 		fDeltaMouse = static_cast<float>(MouseY - CenterY);
 		fAngleX += fDeltaMouse * a_fSpeed;
 	}
-	//Change the Yaw and the Pitch of the camera
-	SetCursorPos(CenterX, CenterY);//Position the mouse in the center
+
+	// Create vectors to represent the 'local' axes
+	vector3 forward = m_pCamera->GetTarget() - m_pCamera->GetPosition();
+	vector3 up = m_pCamera->GetAbove() - m_pCamera->GetPosition();
+	vector3 right = glm::cross(up, forward);
+
+	// Create quaternions to change pitch and yaw of camera
+	quaternion yaw = glm::angleAxis(-fAngleX, right);
+	quaternion pitch = glm::angleAxis(-fAngleY, up);
+
+	// Update the camera's forward vector to include rotation to use as the target v3
+	forward = (forward * yaw * pitch) + m_pCamera->GetPosition();
+	m_pCamera->SetTarget(forward);
+	
+	//Position the mouse in the center
+	SetCursorPos(CenterX, CenterY);
 }
 //Keyboard
 void Application::ProcessKeyboard(void)
@@ -386,10 +400,19 @@ void Application::ProcessKeyboard(void)
 	if (fMultiplier)
 		fSpeed *= 5.0f;
 
+	// Use only if statements so multiple keys can be pressed
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
 		m_pCamera->MoveForward(fSpeed);
-	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
 		m_pCamera->MoveForward(-fSpeed);
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
+		m_pCamera->MoveVertical(fSpeed);
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
+		m_pCamera->MoveVertical(-fSpeed);
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		m_pCamera->MoveSideways(fSpeed);
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+		m_pCamera->MoveSideways(-fSpeed);
 #pragma endregion
 }
 //Joystick
