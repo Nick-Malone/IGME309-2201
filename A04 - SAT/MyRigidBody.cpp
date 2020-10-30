@@ -276,16 +276,110 @@ void MyRigidBody::AddToRenderList(void)
 
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
-	/*
-	Your code goes here instead of this comment;
+	float ra;
+	float rb;
 
-	For this method, if there is an axis that separates the two objects
-	then the return will be different than 0; 1 for any separating axis
-	is ok if you are not going for the extra credit, if you could not
-	find a separating axis you need to return 0, there is an enum in
-	Simplex that might help you [eSATResults] feel free to use it.
-	(eSATResults::SAT_NONE has a value of 0)
-	*/
+	matrix3 rotation;
+	matrix3 absRotation;
+
+	// Create the local xyz axes of each object
+	vector3 aAxes[3] = { GetModelMatrix()[0], GetModelMatrix()[1], GetModelMatrix()[2] };
+	vector3 bAxes[3] = { a_pOther->GetModelMatrix()[0], a_pOther->GetModelMatrix()[1], a_pOther->GetModelMatrix()[2] };
+
+	// Store half widths in shorter variable names for better readability
+	vector3 aHalfWidth = m_v3HalfWidth;
+	vector3 bHalfWidth = a_pOther->m_v3HalfWidth;
+	
+	// Compute rotation matrix expressing b in a's coordinate frame
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			rotation[i][j] = glm::dot(aAxes[i], bAxes[j]);
+		}
+	}
+
+	// Compute translation
+	vector3 translation = a_pOther->GetCenterGlobal() - GetCenterGlobal();
+	translation = vector3(glm::dot(translation, aAxes[0]), glm::dot(translation, aAxes[1]), glm::dot(translation, aAxes[2]));
+
+	// Compute common subexpressions. Add in an epsilon term to
+	// counteract arithmetic errors when two edges are parallel and
+	// their cross product is near null
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			absRotation[i][j] = glm::abs(rotation[i][j] + FLT_EPSILON);
+		}
+	}
+
+	// Test axes aX, aY and aZ
+	for (int i = 0; i < 3; i++)
+	{
+		ra = aHalfWidth[i];
+		rb = bHalfWidth[0] * absRotation[i][0] + bHalfWidth[1] * absRotation[i][1] + bHalfWidth[2] * absRotation[i][2];
+		if (glm::abs(translation[i]) > ra + rb)
+		{
+			return 1;
+		}
+	}
+
+	// Test axes bX, bY and bZ
+	for (int i = 0; i < 3; i++)
+	{
+		ra = aHalfWidth[0] * absRotation[0][i] + aHalfWidth[1] * absRotation[1][i] + aHalfWidth[2] * absRotation[2][i];
+		rb = bHalfWidth[i];
+		if (glm::abs(translation[0] * rotation[0][i] + translation[1] * rotation[1][i] + translation[2] * rotation[2][i]) > ra + rb)
+		{
+			return 1;
+		}
+	}
+
+	// Test axis aX x bX
+	ra = aHalfWidth[1] * absRotation[2][0] + aHalfWidth[2] * absRotation[1][0];
+	rb = bHalfWidth[1] * absRotation[0][2] + bHalfWidth[2] * absRotation[0][1];
+	if (glm::abs(translation[2] * rotation[1][0] - translation[1] * rotation[2][0]) > ra + rb) return 1;
+
+	// Test axis aX x bY
+	ra = aHalfWidth[1] * absRotation[2][1] + aHalfWidth[2] * absRotation[1][1];
+	rb = bHalfWidth[0] * absRotation[0][2] + bHalfWidth[2] * absRotation[0][0];
+	if (glm::abs(translation[2] * rotation[1][1] - translation[1] * rotation[2][1]) > ra + rb) return 1;
+
+	// Test axis aX x bZ
+	ra = aHalfWidth[1] * absRotation[2][2] + aHalfWidth[2] * absRotation[1][2];
+	rb = bHalfWidth[0] * absRotation[0][1] + bHalfWidth[1] * absRotation[0][0];
+	if (glm::abs(translation[2] * rotation[1][2] - translation[1] * rotation[2][2]) > ra + rb) return 1;
+
+	// Test axis aY x bX
+	ra = aHalfWidth[0] * absRotation[2][0] + aHalfWidth[2] * absRotation[0][0];
+	rb = bHalfWidth[1] * absRotation[1][2] + bHalfWidth[2] * absRotation[1][1];
+	if (glm::abs(translation[0] * rotation[2][0] - translation[2] * rotation[0][0]) > ra + rb) return 1;
+
+	// Test axis aY x bY
+	ra = aHalfWidth[0] * absRotation[2][1] + aHalfWidth[2] * absRotation[0][1];
+	rb = bHalfWidth[0] * absRotation[1][2] + bHalfWidth[2] * absRotation[1][0];
+	if (glm::abs(translation[0] * rotation[2][1] - translation[2] * rotation[0][1]) > ra + rb) return 1;
+
+	// Test axis aY x bZ
+	ra = aHalfWidth[0] * absRotation[2][2] + aHalfWidth[2] * absRotation[0][2];
+	rb = bHalfWidth[0] * absRotation[1][1] + bHalfWidth[1] * absRotation[1][0];
+	if (glm::abs(translation[0] * rotation[2][2] - translation[2] * rotation[0][2]) > ra + rb) return 1;
+
+	// Test axis aZ x bX
+	ra = aHalfWidth[0] * absRotation[1][0] + aHalfWidth[1] * absRotation[0][0];
+	rb = bHalfWidth[1] * absRotation[2][2] + bHalfWidth[2] * absRotation[2][1];
+	if (glm::abs(translation[1] * rotation[0][0] - translation[0] * rotation[1][0]) > ra + rb) return 1;
+
+	// Test axis aZ x bY
+	ra = aHalfWidth[0] * absRotation[1][1] + aHalfWidth[1] * absRotation[0][1];
+	rb = bHalfWidth[0] * absRotation[2][2] + bHalfWidth[2] * absRotation[2][0];
+	if (glm::abs(translation[1] * rotation[0][1] - translation[0] * rotation[1][1]) > ra + rb) return 1;
+
+	// Test axis aZ x bZ
+	ra = aHalfWidth[0] * absRotation[1][2] + aHalfWidth[1] * absRotation[0][2];
+	rb = bHalfWidth[0] * absRotation[2][1] + bHalfWidth[1] * absRotation[2][0];
+	if (glm::abs(translation[1] * rotation[0][2] - translation[0] * rotation[1][2]) > ra + rb) return 1;
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;

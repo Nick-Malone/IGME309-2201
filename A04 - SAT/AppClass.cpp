@@ -59,6 +59,8 @@ void Application::Update(void)
 		m_pMeshMngr->PrintLine("YES!", C_RED);
 	else
 		m_pMeshMngr->PrintLine("no", C_YELLOW);
+
+	//m_pMeshMngr->AddPlaneToRenderList(IDENTITY_M4, C_RED);
 }
 void Application::Display(void)
 {
